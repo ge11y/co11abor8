@@ -9,6 +9,7 @@ export default function EditProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
     slug: '', name: '', tagline: '',
     x: '', instagram: '', linkedin: '',
@@ -44,7 +45,7 @@ export default function EditProfilePage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.slug || !form.name) { alert('Slug and name required'); return; }
+    if (!form.slug || !form.name) { alert('Slug and name are required.'); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/profiles/${id}`, {
@@ -61,29 +62,49 @@ export default function EditProfilePage() {
           public: form.public,
         }),
       });
-      if (!res.ok) { alert('Failed to save'); return; }
-      router.push('/dashboard');
+      if (!res.ok) { alert('Failed to save changes.'); return; }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div className="empty-state">Loading...</div>;
+  if (loading) return (
+    <div className="empty-state">
+      <span className="empty-state-icon">◈</span>
+      Loading…
+    </div>
+  );
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <a href="/dashboard" style={{ color: 'var(--muted)', textDecoration: 'none', fontSize: '0.9rem' }}>← Dashboard</a>
-        <span style={{ color: 'var(--border)' }}>|</span>
-        <span style={{ fontSize: '0.9rem' }}>Edit Profile</span>
+    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      {/* ── Back nav ── */}
+      <div className="animate-fade-up" style={{ marginBottom: '2rem' }}>
+        <a href="/dashboard" style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+          color: 'var(--fg-muted)', textDecoration: 'none', fontSize: '0.85rem',
+          transition: 'color var(--t-fast)',
+        }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}
+        >
+          ← Dashboard
+        </a>
       </div>
 
       <form onSubmit={handleSave}>
-        <div className="card" style={{ marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Basic Info</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div className="animate-fade-up" style={{ marginBottom: '1.25rem' }}>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>Edit Profile</h1>
+          <p className="subtitle" style={{ fontSize: '0.85rem', margin: 0 }}>co11abor8.com/p/{form.slug}</p>
+        </div>
+
+        {/* Basic info */}
+        <div className="card animate-fade-up stagger-1" style={{ marginBottom: '1.25rem' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--fg-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Basic Info</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Slug * <span style={{ fontWeight: 400 }}>(URL: co11ab.com/p/slug)</span></label>
+              <label className="form-label">Slug * <span style={{ color: 'var(--fg-faint)', fontWeight: 400 }}>URL: co11abor8.com/p/slug</span></label>
               <input className="form-input" value={form.slug} onChange={set('slug')} />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
@@ -91,52 +112,75 @@ export default function EditProfilePage() {
               <input className="form-input" value={form.name} onChange={set('name')} />
             </div>
           </div>
-          <div className="form-group" style={{ marginTop: '0.75rem' }}>
+          <div className="form-group" style={{ marginTop: '1rem', marginBottom: 0 }}>
             <label className="form-label">Tagline</label>
-            <input className="form-input" placeholder="One-liner about you" value={form.tagline} onChange={set('tagline')} />
+            <input className="form-input" placeholder="One-liner about what you do" value={form.tagline} onChange={set('tagline')} />
           </div>
         </div>
 
-        <div className="card" style={{ marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Socials</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">X (Twitter)</label>
-              <input className="form-input" placeholder="https://x.com/..." value={form.x} onChange={set('x')} />
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Instagram</label>
-              <input className="form-input" placeholder="https://instagram.com/..." value={form.instagram} onChange={set('instagram')} />
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">LinkedIn</label>
-              <input className="form-input" placeholder="https://linkedin.com/in/..." value={form.linkedin} onChange={set('linkedin')} />
-            </div>
+        {/* Socials */}
+        <div className="card animate-fade-up stagger-2" style={{ marginBottom: '1.25rem' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--fg-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Socials</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.875rem' }}>
+            {[
+              { k: 'x', label: 'X (Twitter)', p: 'https://x.com/…' },
+              { k: 'instagram', label: 'Instagram', p: 'https://instagram.com/…' },
+              { k: 'linkedin', label: 'LinkedIn', p: 'https://linkedin.com/in/…' },
+            ].map(f => (
+              <div key={f.k} className="form-group" style={{ margin: 0 }}>
+                <label className="form-label">{f.label}</label>
+                <input className="form-input" placeholder={f.p} value={(form as any)[f.k]} onChange={set(f.k)} />
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="card" style={{ marginBottom: '1rem' }}>
-          <h2 style={{ fontSize: '1rem', marginBottom: '1rem' }}>Notes</h2>
+        {/* Notes */}
+        <div className="card animate-fade-up stagger-3" style={{ marginBottom: '1.25rem' }}>
+          <h3 style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--fg-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Notes</h3>
           <div>
             <label className="form-label">Strengths</label>
-            <textarea className="form-textarea" placeholder="What you're great at..." value={form.strengths} onChange={set('strengths')} rows={3} />
+            <textarea className="form-textarea" placeholder="What you're great at…" value={form.strengths} onChange={set('strengths')} rows={3} />
           </div>
-          <div style={{ marginTop: '0.75rem' }}>
+          <div style={{ marginTop: '1rem' }}>
             <label className="form-label">Thought Patterns</label>
-            <textarea className="form-textarea" placeholder="How you think and process..." value={form.thoughtPatterns} onChange={set('thoughtPatterns')} rows={3} />
+            <textarea className="form-textarea" placeholder="How you think and process…" value={form.thoughtPatterns} onChange={set('thoughtPatterns')} rows={3} />
           </div>
-          <div style={{ marginTop: '0.75rem' }}>
+          <div style={{ marginTop: '1rem' }}>
             <label className="form-label">Passions</label>
-            <textarea className="form-textarea" placeholder="What you're obsessed with..." value={form.passions} onChange={set('passions')} rows={3} />
+            <textarea className="form-textarea" placeholder="What you're obsessed with…" value={form.passions} onChange={set('passions')} rows={3} />
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button type="submit" className="btn" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</button>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.875rem', cursor: 'pointer' }}>
-            <input type="checkbox" checked={form.public} onChange={e => setForm(p => ({ ...p, public: e.target.checked }))} style={{ accentColor: 'var(--accent)' }} />
-            Public profile (visible at /p/{form.slug})
+        {/* Visibility */}
+        <div className="card animate-fade-up stagger-4" style={{ marginBottom: '1.5rem' }}>
+          <label className="toggle">
+            <input
+              type="checkbox"
+              checked={form.public}
+              onChange={e => setForm(p => ({ ...p, public: e.target.checked }))}
+            />
+            <span className="toggle-track" />
+            <span>{form.public ? 'Public — profile is visible' : 'Private — profile is hidden'}</span>
           </label>
+          <p style={{ fontSize: '0.78rem', color: 'var(--fg-muted)', marginTop: '0.75rem' }}>
+            {form.public
+              ? `Your profile will be live at co11abor8.com/p/${form.slug}`
+              : 'Your profile will not be visible to the public.'}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="animate-fade-up stagger-5" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button type="submit" className="btn" disabled={saving} style={{ padding: '0.75rem 2rem' }}>
+            {saving ? 'Saving…' : 'Save Changes'}
+          </button>
+          {saved && (
+            <span style={{ fontSize: '0.875rem', color: 'var(--status-open)' }}>
+              Changes saved ✓
+            </span>
+          )}
+          <a href="/dashboard" className="btn btn-outline">Discard</a>
         </div>
       </form>
     </div>
