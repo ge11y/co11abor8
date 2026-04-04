@@ -1,4 +1,10 @@
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless';
+
+// Supabase connection — uses same interface as Vercel Postgres
+// Connection string format: postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
+const connectionUrl = process.env.DATABASE_URL!;
+
+const sql = neon(connectionUrl, { ssl: 'require' });
 
 /**
  * Initialize database schema.
@@ -25,7 +31,7 @@ export async function initDb() {
   await sql`
     CREATE TABLE IF NOT EXISTS requests (
       id               TEXT PRIMARY KEY,
-      creator_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      creator_id       TEXT NOT NULL,
       requester_name   TEXT NOT NULL,
       requester_contact TEXT NOT NULL,
       project_idea     TEXT NOT NULL,
@@ -38,17 +44,6 @@ export async function initDb() {
       reviewed_at      TIMESTAMPTZ,
       admin_status     TEXT DEFAULT 'open',
       notes            TEXT DEFAULT ''
-    )
-  `;
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS slots (
-      id           TEXT PRIMARY KEY,
-      creator_id   TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      start_time   TIMESTAMPTZ NOT NULL,
-      end_time     TIMESTAMPTZ NOT NULL,
-      booked_by    TEXT DEFAULT '',
-      available    BOOLEAN DEFAULT TRUE
     )
   `;
 }
