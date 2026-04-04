@@ -9,9 +9,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const body = await req.json();
 
-  const existing = await sql`SELECT creator_id FROM requests WHERE id = ${id}`;
-  if (existing.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (existing.rows[0].creator_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  const existing = await sql`SELECT creator_id FROM requests WHERE id = ${id}` as any[];
+  if (existing.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (existing[0].creator_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { adminStatus, notes } = body;
 

@@ -57,8 +57,9 @@ export async function getCurrentUser(): Promise<User | null> {
       FROM users WHERE id = ${payload.userId}
     `;
 
-    if (result.rows.length === 0) return null;
-    const row = result.rows[0];
+    const rows = result as any[];
+    if (rows.length === 0) return null;
+    const row = rows[0];
     return {
       id: row.id,
       email: row.email,

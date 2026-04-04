@@ -8,43 +8,35 @@ export async function GET(req: Request) {
   const slug = searchParams.get('slug');
 
   if (!slug) {
-    // Return all public profiles
-    const result = await sql`
+    const rows = await sql`
       SELECT id, slug, name, bio, socials_x, socials_instagram, socials_linkedin,
              scheduling_url, scheduling_label
       FROM users WHERE slug IS NOT NULL
       ORDER BY created_at DESC
-    `;
-    return NextResponse.json(result.rows.map(row => ({
-      id: row.id,
-      slug: row.slug,
-      name: row.name,
-      bio: row.bio || '',
+    ` as any[];
+
+    return NextResponse.json(rows.map(row => ({
+      id: row.id, slug: row.slug, name: row.name, bio: row.bio || '',
       socials: { x: row.socials_x, instagram: row.socials_instagram, linkedin: row.socials_linkedin },
-      schedulingUrl: row.scheduling_url || '',
-      schedulingLabel: row.scheduling_label || 'Book a time',
+      schedulingUrl: row.scheduling_url || '', schedulingLabel: row.scheduling_label || 'Book a time',
     })));
   }
 
-  const result = await sql`
+  const rows = await sql`
     SELECT id, slug, name, bio, socials_x, socials_instagram, socials_linkedin,
            scheduling_url, scheduling_label
     FROM users WHERE slug = ${slug}
-  `;
+  ` as any[];
 
-  if (result.rows.length === 0) {
+  if (rows.length === 0) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const row = result.rows[0];
+  const row = rows[0];
   return NextResponse.json({
-    id: row.id,
-    slug: row.slug,
-    name: row.name,
-    bio: row.bio || '',
+    id: row.id, slug: row.slug, name: row.name, bio: row.bio || '',
     socials: { x: row.socials_x, instagram: row.socials_instagram, linkedin: row.socials_linkedin },
-    schedulingUrl: row.scheduling_url || '',
-    schedulingLabel: row.scheduling_label || 'Book a time',
+    schedulingUrl: row.scheduling_url || '', schedulingLabel: row.scheduling_label || 'Book a time',
   });
 }
 
@@ -57,10 +49,9 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { name, slug, bio, socials, schedulingUrl, schedulingLabel } = body;
 
-    // If slug is changing, check uniqueness
     if (slug && slug !== (user as any).slug) {
-      const existing = await sql`SELECT id FROM users WHERE slug = ${slug} AND id != ${user.id}`;
-      if (existing.rows.length > 0) {
+      const existing = await sql`SELECT id FROM users WHERE slug = ${slug} AND id != ${user.id}` as any[];
+      if (existing.length > 0) {
         return NextResponse.json({ error: 'That link is taken.' }, { status: 409 });
       }
     }

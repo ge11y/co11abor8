@@ -1,10 +1,33 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, NeonQueryFunction } from '@neondatabase/serverless';
 
-// Supabase connection — uses same interface as Vercel Postgres
-// Connection string format: postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
-const connectionUrl = process.env.DATABASE_URL!;
+let _sql: NeonQueryFunction<false, false> | null = null;
 
-const sql = neon(connectionUrl, { ssl: 'require' });
+function getSql(): NeonQueryFunction<false, false> {
+  if (!_sql) {
+    const connectionUrl = process.env.DATABASE_URL;
+    if (!connectionUrl) {
+      // Return a dummy that throws on use — only happens in broken dev/build envs
+      return ((..._args: any[]) => {
+        throw new Error('DATABASE_URL environment variable is not set');
+      }) as any;
+    }
+    _sql = neon(connectionUrl);
+  }
+  return _sql;
+}
+
+// sql is a lazy proxy — no database connection is made until the first query runs
+export const sql = new Proxy(
+  (() => {}) as unknown as NeonQueryFunction<false, false>,
+  {
+    apply(_target, _this, args) {
+      return (getSql() as Function).apply(null, args);
+    },
+    get(_target, prop) {
+      return (getSql() as any)[prop];
+    },
+  }
+);
 
 /**
  * Initialize database schema.
@@ -47,5 +70,3 @@ export async function initDb() {
     )
   `;
 }
-
-export { sql };

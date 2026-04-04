@@ -7,14 +7,13 @@ export async function GET() {
   const user = await getCurrentUser();
 
   if (!user) {
-    // Public: return all requests (for browsing)
-    const result = await sql`
+    const rows = await sql`
       SELECT id, creator_id, requester_name, requester_contact, project_idea,
              status, help_needed, vision, submission_type, time_slot,
              submitted_at, admin_status
       FROM requests ORDER BY submitted_at DESC
-    `;
-    return NextResponse.json(result.rows.map(row => ({
+    ` as any[];
+    return NextResponse.json(rows.map(row => ({
       id: row.id, creatorId: row.creator_id, requesterName: row.requester_name,
       requesterContact: row.requester_contact, projectIdea: row.project_idea,
       status: row.status, helpNeeded: row.help_needed, vision: row.vision,
@@ -23,8 +22,7 @@ export async function GET() {
     })));
   }
 
-  // Authed: return requests TO this user + requests THEY submitted
-  const result = await sql`
+  const rows = await sql`
     SELECT id, creator_id, requester_name, requester_contact, project_idea,
            status, help_needed, vision, submission_type, time_slot,
            submitted_at, reviewed_at, admin_status, notes
@@ -32,9 +30,9 @@ export async function GET() {
     WHERE creator_id = ${user.id}
        OR requester_contact = ${user.email}
     ORDER BY submitted_at DESC
-  `;
+  ` as any[];
 
-  return NextResponse.json(result.rows.map(row => ({
+  return NextResponse.json(rows.map(row => ({
     id: row.id, creatorId: row.creator_id, requesterName: row.requester_name,
     requesterContact: row.requester_contact, projectIdea: row.project_idea,
     status: row.status, helpNeeded: row.help_needed, vision: row.vision,

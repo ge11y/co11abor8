@@ -17,19 +17,22 @@ export async function POST(req: Request) {
     }
 
     // URL-safe slug
-    const safeSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const safeSlug = slug.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
     await initDb();
 
     // Check email taken
-    const existing = await sql`SELECT id FROM users WHERE email = ${email.toLowerCase()}`;
-    if (existing.rows.length > 0) {
+    const existing = await sql`SELECT id FROM users WHERE email = ${email.toLowerCase()}` as any[];
+    if (existing.length > 0) {
       return NextResponse.json({ error: 'Email already registered.' }, { status: 409 });
     }
 
     // Check slug taken
-    const slugCheck = await sql`SELECT id FROM users WHERE slug = ${safeSlug}`;
-    if (slugCheck.rows.length > 0) {
+    const slugCheck = await sql`SELECT id FROM users WHERE slug = ${safeSlug}` as any[];
+    if (slugCheck.length > 0) {
       return NextResponse.json({ error: 'That link is already taken. Try another.' }, { status: 409 });
     }
 

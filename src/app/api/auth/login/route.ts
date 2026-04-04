@@ -11,24 +11,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Email and password required.' }, { status: 400 });
     }
 
-    const result = await sql`
+    const rows = await sql`
       SELECT id, email, slug, name, bio, socials_x, socials_instagram, socials_linkedin,
              scheduling_url, scheduling_label, password_hash
       FROM users WHERE email = ${email.toLowerCase()}
-    `;
+    ` as any[];
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ error: 'No account found with that email.' }, { status: 401 });
     }
 
-    const user = result.rows[0];
+    const user = rows[0];
     const valid = await verifyPassword(password, user.password_hash);
     if (!valid) {
       return NextResponse.json({ error: 'Incorrect password.' }, { status: 401 });
     }
 
     const token = signToken(user.id);
-      await setSessionCookie(token);
+    await setSessionCookie(token);
 
     return NextResponse.json({
       user: {
