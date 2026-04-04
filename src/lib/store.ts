@@ -1,53 +1,52 @@
 import fs from 'fs';
 import path from 'path';
-import { Request, TimeSlot, Profile } from './types';
+import { Request, TimeSlot, User } from './types';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
+const USERS_FILE    = path.join(DATA_DIR, 'users.json');
 const REQUESTS_FILE = path.join(DATA_DIR, 'requests.json');
-const SLOTS_FILE = path.join(DATA_DIR, 'slots.json');
-const PROFILES_FILE = path.join(DATA_DIR, 'profiles.json');
+const SLOTS_FILE    = path.join(DATA_DIR, 'slots.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// ─── Profiles ─────────────────────────────────────────────────────────────────
+// ─── Users ─────────────────────────────────────────────────────────────────────
 
-export function getProfiles(): Profile[] {
+export function getUsers(): User[] {
   ensureDataDir();
-  if (!fs.existsSync(PROFILES_FILE)) return [];
-  return JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf8'));
+  if (!fs.existsSync(USERS_FILE)) return [];
+  return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
 }
 
-export function getPublicProfiles(): Profile[] {
-  return getProfiles().filter(p => p.public);
+export function getUserById(id: string): User | null {
+  return getUsers().find(u => u.id === id) ?? null;
 }
 
-export function getProfileBySlug(slug: string): Profile | null {
-  return getProfiles().find(p => p.slug === slug) ?? null;
+export function getUserByEmail(email: string): User | null {
+  return getUsers().find(u => u.email.toLowerCase() === email.toLowerCase()) ?? null;
 }
 
-export function saveProfile(profile: Profile): void {
+export function getUserBySlug(slug: string): User | null {
+  return getUsers().find(u => u.slug === slug) ?? null;
+}
+
+export function saveUser(user: User): void {
   ensureDataDir();
-  const all = getProfiles();
-  const idx = all.findIndex(p => p.id === profile.id);
-  if (idx >= 0) all[idx] = profile;
-  else all.push(profile);
-  fs.writeFileSync(PROFILES_FILE, JSON.stringify(all, null, 2));
+  const all = getUsers();
+  const idx = all.findIndex(u => u.id === user.id);
+  if (idx >= 0) all[idx] = user;
+  else all.push(user);
+  fs.writeFileSync(USERS_FILE, JSON.stringify(all, null, 2));
 }
 
-export function updateProfile(id: string, updates: Partial<Profile>): Profile | null {
-  const all = getProfiles();
-  const idx = all.findIndex(p => p.id === id);
+export function updateUser(id: string, updates: Partial<User>): User | null {
+  const all = getUsers();
+  const idx = all.findIndex(u => u.id === id);
   if (idx < 0) return null;
   all[idx] = { ...all[idx], ...updates };
-  fs.writeFileSync(PROFILES_FILE, JSON.stringify(all, null, 2));
+  fs.writeFileSync(USERS_FILE, JSON.stringify(all, null, 2));
   return all[idx];
-}
-
-export function deleteProfile(id: string): void {
-  const all = getProfiles().filter(p => p.id !== id);
-  fs.writeFileSync(PROFILES_FILE, JSON.stringify(all, null, 2));
 }
 
 // ─── Requests ─────────────────────────────────────────────────────────────────
@@ -56,6 +55,14 @@ export function getRequests(): Request[] {
   ensureDataDir();
   if (!fs.existsSync(REQUESTS_FILE)) return [];
   return JSON.parse(fs.readFileSync(REQUESTS_FILE, 'utf8'));
+}
+
+export function getRequestsForCreator(creatorId: string): Request[] {
+  return getRequests().filter(r => r.creatorId === creatorId);
+}
+
+export function getRequestsByRequester(requesterContact: string): Request[] {
+  return getRequests().filter(r => r.requesterContact === requesterContact);
 }
 
 export function saveRequest(req: Request): void {
@@ -84,6 +91,10 @@ export function getTimeSlots(): TimeSlot[] {
   return JSON.parse(fs.readFileSync(SLOTS_FILE, 'utf8'));
 }
 
+export function getSlotsForCreator(creatorId: string): TimeSlot[] {
+  return getTimeSlots().filter(s => s.creatorId === creatorId);
+}
+
 export function saveTimeSlot(slot: TimeSlot): void {
   ensureDataDir();
   const all = getTimeSlots();
@@ -102,7 +113,7 @@ export function updateSlot(id: string, updates: Partial<TimeSlot>): TimeSlot | n
   return all[idx];
 }
 
-// ─── Utils ────────────────────────────────────────────────────────────────────
+// ─── Utils ───────────────────────────────────────────────────────────────────
 
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);

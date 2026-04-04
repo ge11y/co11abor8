@@ -7,145 +7,185 @@ export default function PublicProfile() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  const [form, setForm] = useState({ name: '', contact: '', projectIdea: '', helpNeeded: '', vision: '' });
 
   useEffect(() => {
-    fetch(`/api/profiles`)
-      .then(r => r.json())
-      .then(profiles => {
-        const found = profiles.find((p: any) => p.slug === slug && p.public);
-        if (found) setProfile(found);
-        else setNotFound(true);
-        setLoading(false);
-      });
+    fetch(`/api/profile?slug=${slug}`).then(r => r.json()).then(data => {
+      if (data.error) { setNotFound(true); }
+      else { setProfile(data); }
+      setLoading(false);
+    });
   }, [slug]);
 
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm(p => ({ ...p, [k]: e.target.value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.contact || !form.projectIdea || !form.helpNeeded) {
+      setError('Please fill in all required fields.');
+      return;
+    }
+    setError('');
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          creatorId: profile.id,
+          requesterName: form.name,
+          requesterContact: form.contact,
+          projectIdea: form.projectIdea,
+          helpNeeded: form.helpNeeded,
+          vision: form.vision,
+          status: 'in_progress',
+          submissionType: 'collaboration',
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setSubmitted(true);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) return (
-    <div className="empty-state">
-      <span className="empty-state-icon">◈</span>
-      Loading…
+    <div style={{ maxWidth: 640, margin: '0 auto', paddingTop: 'clamp(3rem, 8vh, 6rem)' }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 20, height: 20, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ color: 'var(--fg-muted)', fontSize: '0.875rem' }}>Loading…</p>
+      </div>
     </div>
   );
+
   if (notFound || !profile) return (
-    <div className="empty-state">
-      <span className="empty-state-icon">◎</span>
-      Profile not found.
+    <div style={{ maxWidth: 480, margin: '0 auto', paddingTop: 'clamp(4rem, 10vh, 8rem)', textAlign: 'center' }}>
+      <div className="card" style={{ padding: '3rem 2rem' }}>
+        <span style={{ fontSize: '2.5rem', opacity: 0.3, display: 'block', marginBottom: '1rem' }}>◎</span>
+        <h2 style={{ marginBottom: '0.5rem' }}>Profile not found</h2>
+        <p style={{ color: 'var(--fg-muted)', fontSize: '0.875rem' }}>This link doesn't exist yet.</p>
+        <a href="/" style={{ display: 'inline-block', marginTop: '1.5rem', color: 'var(--accent)', textDecoration: 'none', fontSize: '0.875rem' }}>← Go home</a>
+      </div>
     </div>
   );
 
   const socials = [
-    profile.socials?.x && { label: 'X', href: profile.socials.x, icon: '𝕏' },
-    profile.socials?.instagram && { label: 'Instagram', href: profile.socials.instagram, icon: '◎' },
-    profile.socials?.linkedin && { label: 'LinkedIn', href: profile.socials.linkedin, icon: '⬡' },
-  ].filter(Boolean) as { label: string; href: string; icon: string }[];
+    profile.socials?.x && { label: 'X', href: profile.socials.x },
+    profile.socials?.instagram && { label: 'Instagram', href: profile.socials.instagram },
+    profile.socials?.linkedin && { label: 'LinkedIn', href: profile.socials.linkedin },
+  ].filter(Boolean) as { label: string; href: string }[];
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-
-      {/* ── Ambient glow ─────────────────────────────────────── */}
+    <div style={{ maxWidth: 680, margin: '0 auto' }}>
+      {/* Ambient glow */}
       <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '60vw', height: '40vh',
+        width: '55vw', height: '35vh',
         background: 'radial-gradient(ellipse, rgba(139,124,246,0.07) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0,
       }} />
 
       {/* ── Profile card ─────────────────────────────────────── */}
-      <div className="card card-glow animate-fade-up" style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: 'clamp(2.5rem, 5vw, 4.5rem) clamp(1.5rem, 5vw, 4rem)', marginBottom: '1.5rem' }}>
-
-        {/* Avatar */}
+      <div className="card card-glow animate-fade-up" style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 5vw, 3.5rem)', marginBottom: '1.5rem' }}>
         <div style={{
-          width: 96, height: 96, borderRadius: '50%',
+          width: 88, height: 88, borderRadius: '50%',
           background: 'linear-gradient(135deg, var(--accent) 0%, rgba(139,124,246,0.4) 100%)',
-          border: '2px solid rgba(139,124,246,0.3)',
-          boxShadow: '0 0 40px rgba(139,124,246,0.2), 0 0 80px rgba(139,124,246,0.08)',
+          border: '2px solid rgba(139,124,246,0.25)',
+          boxShadow: '0 0 40px rgba(139,124,246,0.18)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '2.5rem', fontWeight: 700, color: '#fff',
-          margin: '0 auto 1.75rem', letterSpacing: '-0.02em',
+          fontSize: '2.25rem', fontWeight: 700, color: '#fff',
+          margin: '0 auto 1.5rem', letterSpacing: '-0.02em',
         }}>
           {profile.name?.[0]?.toUpperCase()}
         </div>
 
-        {/* Name + tagline */}
-        <h1 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.25rem)', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: 'clamp(1.6rem, 3vw, 2.1rem)', letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>
           {profile.name}
         </h1>
-        {profile.tagline && (
-          <p style={{ color: 'var(--fg-secondary)', fontSize: '1.05rem', maxWidth: 480, margin: '0 auto 1.5rem', lineHeight: 1.6 }}>
-            {profile.tagline}
+        {profile.bio && (
+          <p style={{ color: 'var(--fg-secondary)', fontSize: '1rem', maxWidth: 440, margin: '0 auto 1.5rem', lineHeight: 1.65 }}>
+            {profile.bio}
           </p>
         )}
 
-        {/* Socials */}
         {socials.length > 0 && (
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
             {socials.map(s => (
-              <a
-                key={s.label}
-                href={s.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-                  padding: '0.5rem 1rem', borderRadius: 'var(--radius-badge)',
-                  border: '1px solid var(--border)', background: 'var(--surface-1)',
-                  color: 'var(--fg-secondary)', fontSize: '0.85rem', fontWeight: 500,
-                  textDecoration: 'none', transition: 'border-color var(--t-fast), color var(--t-fast), background var(--t-fast)',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(139,124,246,0.4)';
-                  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg)';
-                  (e.currentTarget as HTMLAnchorElement).style.background = 'var(--accent-dim)';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)';
-                  (e.currentTarget as HTMLAnchorElement).style.color = 'var(--fg-secondary)';
-                  (e.currentTarget as HTMLAnchorElement).style.background = 'var(--surface-1)';
-                }}
-              >
-                <span style={{ fontSize: '0.9rem' }}>{s.icon}</span>
+              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-badge)', border: '1px solid var(--border)', background: 'var(--surface-1)', color: 'var(--fg-secondary)', fontSize: '0.8rem', textDecoration: 'none', transition: 'all var(--t-fast)' }}>
                 {s.label}
               </a>
             ))}
           </div>
         )}
+
+        {profile.schedulingUrl && (
+          <a href={profile.schedulingUrl} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'var(--accent-dim)', border: '1px solid rgba(139,124,246,0.25)', color: 'var(--accent)', borderRadius: 'var(--radius-badge)', padding: '0.5rem 1.1rem', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', marginTop: '0.5rem' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            {profile.schedulingLabel || 'Book a time'}
+          </a>
+        )}
       </div>
 
-      {/* ── Three trait cards ────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        {[
-          { label: 'Strengths',   value: profile.strengths },
-          { label: 'Thought Patterns', value: profile.thoughtPatterns },
-          { label: 'Passions',   value: profile.passions },
-        ].map((trait, i) => (
-          <div
-            key={trait.label}
-            className="card animate-fade-up"
-            style={{
-              animationDelay: `${(i + 1) * 80}ms`,
-              border: '1px solid var(--border)',
-            }}
-          >
-            <div style={{
-              fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.12em',
-              textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '0.875rem',
-            }}>
-              {trait.label}
-            </div>
-            <p style={{
-              fontSize: '0.925rem', lineHeight: 1.7, color: 'var(--fg-secondary)',
-              whiteSpace: 'pre-wrap', margin: 0,
-            }}>
-              {trait.value || '—'}
-            </p>
+      {/* ── Submit request ──────────────────────────────────── */}
+      <div id="submit" className="card animate-fade-up stagger-2" style={{ position: 'relative', zIndex: 1 }}>
+        {submitted ? (
+          <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✓</div>
+            <h2 style={{ marginBottom: '0.5rem' }}>Request sent</h2>
+            <p style={{ color: 'var(--fg-secondary)', fontSize: '0.9rem' }}>Your request has been sent to {profile.name}. They'll be in touch soon.</p>
           </div>
-        ))}
-      </div>
+        ) : (
+          <>
+            <h2 style={{ marginBottom: '1.5rem', fontSize: '1.1rem' }}>Send a request</h2>
 
-      {/* ── CTA ─────────────────────────────────────────────── */}
-      <div style={{ textAlign: 'center' }}>
-        <a href="/submit" className="btn" style={{ padding: '0.8rem 2.5rem' }}>
-          Submit a Request
-        </a>
+            {error && <div className="alert alert-error">{error}</div>}
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.875rem' }}>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label">Your name <span>*</span></label>
+                  <input className="form-input" placeholder="Jane Smith" value={form.name} onChange={set('name')} />
+                </div>
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label className="form-label">Contact <span>*</span></label>
+                  <input className="form-input" placeholder="jane@… or @handle" value={form.contact} onChange={set('contact')} />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label className="form-label">What are you working on? <span>*</span></label>
+                <textarea className="form-textarea" placeholder="Describe your project or idea…"
+                  value={form.projectIdea} onChange={set('projectIdea')} rows={3} style={{ minHeight: 90 }} />
+              </div>
+
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label className="form-label">What do you need? <span>*</span></label>
+                <textarea className="form-textarea" placeholder="Feedback, a partner, resources, visibility…"
+                  value={form.helpNeeded} onChange={set('helpNeeded')} rows={3} style={{ minHeight: 90 }} />
+              </div>
+
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label className="form-label">Where do you see this going? <span style={{ color: 'var(--fg-muted)', fontWeight: 400 }}>(optional)</span></label>
+                <textarea className="form-textarea" placeholder="Your vision…"
+                  value={form.vision} onChange={set('vision')} rows={2} />
+              </div>
+
+              <button type="submit" className="btn" disabled={submitting} style={{ width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '0.85rem' }}>
+                {submitting ? 'Sending…' : `Send to ${profile.name}`}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );

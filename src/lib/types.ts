@@ -1,6 +1,10 @@
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
 export type SubmissionType = 'collaboration' | 'project_idea' | 'status_update' | 'general';
 export type WorkStatus = 'just_starting' | 'in_progress' | 'near_completion' | 'stuck' | 'other';
 export type AdminStatus = 'open' | 'in_review' | 'approved' | 'complete' | 'declined';
+
+// ─── Socials ──────────────────────────────────────────────────────────────────
 
 export interface Socials {
   x?: string;
@@ -8,24 +12,32 @@ export interface Socials {
   linkedin?: string;
 }
 
-export interface Profile {
+// ─── User (creator account) ────────────────────────────────────────────────────
+
+export interface User {
   id: string;
+  email: string;
   slug: string;
   name: string;
-  tagline: string;
+  passwordHash: string;
+  bio: string;
   socials: Socials;
-  strengths: string;
-  thoughtPatterns: string;
-  passions: string;
-  public: boolean;
+  /** URL to Calendly, Google Calendar embed, Google Meet, or any scheduling link */
+  schedulingUrl: string;
+  schedulingLabel: string;
   createdAt: string;
 }
 
+// ─── Request (inbound to a creator) ───────────────────────────────────────────
+
 export interface Request {
   id: string;
-  profileId?: string;
-  name: string;
-  contact: string;
+  /** The creator's user ID this request is sent to */
+  creatorId: string;
+  /** Display name of the requester */
+  requesterName: string;
+  /** Contact (email or @handle) of the requester */
+  requesterContact: string;
   projectIdea: string;
   status: WorkStatus;
   helpNeeded: string;
@@ -38,8 +50,11 @@ export interface Request {
   notes?: string;
 }
 
+// ─── Time Slot ────────────────────────────────────────────────────────────────
+
 export interface TimeSlot {
   id: string;
+  creatorId: string;
   startTime: string;
   endTime: string;
   bookedBy?: string;

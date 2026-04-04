@@ -1,124 +1,153 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Request } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
-const STATUS_LABELS: Record<string, string> = {
-  open: 'Open', in_review: 'In Review', approved: 'Approved',
-  complete: 'Complete', declined: 'Declined',
-};
+interface PublicProfile {
+  id: string;
+  slug: string;
+  name: string;
+  bio: string;
+  socials: { x?: string; instagram?: string; linkedin?: string };
+  schedulingUrl: string;
+  schedulingLabel: string;
+}
 
 export default function HomePage() {
-  const [requests, setRequests] = useState<Request[]>([]);
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+  const [search, setSearch] = useState('');
+  const [profiles, setProfiles] = useState<PublicProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchFocused, setSearchFocused] = useState(false);
 
   useEffect(() => {
-    fetch('/api/requests').then(r => r.json()).then(data => {
-      setRequests(data);
+    fetch('/api/auth/me').then(r => r.json()).then(data => {
+      setUser(data.user);
       setLoading(false);
+    });
+    fetch('/api/profile').then(r => r.json()).then(data => {
+      setProfiles(Array.isArray(data) ? data : []);
     });
   }, []);
 
-  const open = requests.filter(r => r.adminStatus === 'open').length;
-  const inReview = requests.filter(r => r.adminStatus === 'in_review').length;
-  const recent = requests.slice(0, 5);
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!search.trim()) return;
+    const found = profiles.find(p =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.slug.toLowerCase().includes(search.toLowerCase())
+    );
+    if (found) {
+      router.push(`/p/${found.slug}`);
+    } else {
+      alert('No profile found for that name. Check the link or ask them to create one.');
+    }
+  };
+
+  const suggested = profiles.slice(0, 4);
 
   return (
-    <div>
+    <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
 
-      {/* ── Hero ────────────────────────────────────────────── */}
-      <div className="card card-glow animate-fade-up" style={{ textAlign: 'center', padding: 'clamp(3rem, 6vw, 5rem) clamp(1.5rem, 5vw, 4rem)', marginBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
-        <p style={{ fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '1rem' }}>
-          Collaboration starts here
-        </p>
-        <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)', letterSpacing: '-0.03em', marginBottom: '1rem' }}>
-          A calm space to<br className="hide-mobile" />
-          <span style={{ color: 'var(--accent)' }}> share what you're building</span>
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <div style={{ paddingTop: 'clamp(4rem, 12vh, 8rem)', paddingBottom: '3rem' }} className="animate-fade-up">
+        <h1 style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', letterSpacing: '-0.03em', marginBottom: '1.25rem', lineHeight: 1.1 }}>
+          Collaborate with<br />
+          <span style={{ color: 'var(--accent)' }}>people worth knowing</span>
         </h1>
-        <p className="subtitle" style={{ maxWidth: 540, margin: '0 auto 2rem', fontSize: 'clamp(0.95rem, 1.5vw, 1.1rem)' }}>
-          Submit a request, share your profile, and connect with people who can help move your work forward.
+        <p style={{ color: 'var(--fg-secondary)', fontSize: 'clamp(1rem, 2vw, 1.15rem)', maxWidth: 480, margin: '0 auto 2.5rem', lineHeight: 1.65 }}>
+          Find someone, send a request, and start working together. No noise, no friction.
         </p>
-        <div style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <a href="/submit" className="btn" style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}>
-            Submit a Request
-          </a>
-          <a href="/requests" className="btn btn-outline" style={{ fontSize: '0.95rem', padding: '0.8rem 2rem' }}>
-            Browse Requests
-          </a>
-        </div>
       </div>
 
-      {/* ── Stats ───────────────────────────────────────────── */}
-      {!loading && requests.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: 'clamp(2.5rem, 5vw, 4rem)' }} className="animate-fade-up stagger-1">
-          <div className="stat-card" style={{ textAlign: 'center' }}>
-            <div className="stat-number">{requests.length}</div>
-            <div className="stat-label">Total Requests</div>
-          </div>
-          <div className="stat-card" style={{ textAlign: 'center' }}>
-            <div className="stat-number" style={{ color: 'var(--status-open)' }}>{open}</div>
-            <div className="stat-label">Open</div>
-          </div>
-          <div className="stat-card" style={{ textAlign: 'center' }}>
-            <div className="stat-number" style={{ color: 'var(--status-review)' }}>{inReview}</div>
-            <div className="stat-label">In Review</div>
-          </div>
+      {/* ── Search ────────────────────────────────────────────── */}
+      <form onSubmit={handleSearch} className="animate-fade-up stagger-1" style={{ marginBottom: '4rem', position: 'relative' }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '0.75rem',
+          background: searchFocused ? 'var(--surface-2)' : 'var(--surface-1)',
+          border: `1.5px solid ${searchFocused ? 'var(--accent)' : 'var(--border)'}`,
+          borderRadius: 'var(--radius-badge)', padding: '0.875rem 1.25rem',
+          boxShadow: searchFocused ? '0 0 0 4px var(--accent-dim)' : 'none',
+          transition: 'all var(--t-mid) var(--ease-out)',
+          maxWidth: 520, margin: '0 auto',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--fg-muted)', flexShrink: 0 }}>
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search for someone by name or link…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            style={{
+              flex: 1, background: 'transparent', border: 'none', outline: 'none',
+              color: 'var(--fg)', fontSize: '0.95rem', fontFamily: 'inherit',
+            }}
+          />
+          <button type="submit" style={{
+            background: 'var(--accent)', color: '#fff', border: 'none',
+            borderRadius: '6px', padding: '0.4rem 0.9rem', fontSize: '0.8rem',
+            fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            flexShrink: 0,
+          }}>
+            Find
+          </button>
+        </div>
+        <p style={{ fontSize: '0.78rem', color: 'var(--fg-muted)', marginTop: '0.75rem' }}>
+          Or share your link so others can find you
+        </p>
+      </form>
+
+      {/* ── Auth CTAs ──────────────────────────────────────────── */}
+      {!loading && !user && (
+        <div className="animate-fade-up stagger-2" style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '4rem' }}>
+          <a href="/login" className="btn" style={{ padding: '0.8rem 2rem' }}>Sign in</a>
+          <a href="/register" className="btn btn-outline" style={{ padding: '0.8rem 2rem' }}>Create your link</a>
+        </div>
+      )}
+      {!loading && user && (
+        <div className="animate-fade-up stagger-2" style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '4rem' }}>
+          <a href="/dashboard" className="btn" style={{ padding: '0.8rem 2rem' }}>My Dashboard</a>
+          <a href={`/p/${user.slug}`} className="btn btn-outline" style={{ padding: '0.8rem 2rem' }}>View my link</a>
         </div>
       )}
 
-      {/* ── Recent requests ──────────────────────────────────── */}
-      <div className="animate-fade-up stagger-2">
-        <div className="section-header">
-          <div>
-            <h2>Recent Requests</h2>
-            <p className="subtitle" style={{ margin: 0, fontSize: '0.875rem' }}>See what's being worked on</p>
+      {/* ── Divider ─────────────────────────────────────────────── */}
+      {profiles.length > 0 && (
+        <>
+          <div className="divider" />
+          <div className="animate-fade-up stagger-3" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--fg-muted)', fontWeight: 600, margin: 0 }}>
+              People on co11abor8
+            </p>
           </div>
-          {requests.length > 5 && (
-            <a href="/requests" className="btn btn-outline btn-sm hide-mobile">View all</a>
-          )}
-        </div>
-
-        {loading ? (
-          <div className="empty-state">
-            <span className="empty-state-icon">◈</span>
-            Loading requests…
-          </div>
-        ) : recent.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', padding: '3.5rem 2rem' }}>
-            <span className="empty-state-icon">◈</span>
-            <p style={{ color: 'var(--fg-secondary)', marginBottom: '1.5rem' }}>No requests yet — be the first to submit one.</p>
-            <a href="/submit" className="btn">Submit a Request</a>
-          </div>
-        ) : (
-          <div>
-            {recent.map((req, i) => (
-              <div
-                key={req.id}
-                className="request-card animate-fade-up"
-                style={{ animationDelay: `${i * 50}ms` }}
-                onClick={() => window.location.href = '/requests'}
-                role="button"
-                tabIndex={0}
-                onKeyDown={e => e.key === 'Enter' && (window.location.href = '/requests')}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                      <h3>{req.name}</h3>
-                      <span className={`badge badge-${req.adminStatus}`}>{STATUS_LABELS[req.adminStatus]}</span>
-                    </div>
-                    <p className="request-snippet">{req.projectIdea}</p>
-                    <div className="request-meta" style={{ marginTop: '0.6rem' }}>
-                      <span>{req.submissionType?.replace('_', ' ')}</span>
-                      <span>·</span>
-                      <span>{new Date(req.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                    </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.875rem' }} className="animate-fade-up stagger-4">
+            {suggested.map(p => (
+              <a key={p.id} href={`/p/${p.slug}`} style={{ textDecoration: 'none' }}>
+                <div className="card" style={{ textAlign: 'center', padding: '1.5rem 1.25rem', cursor: 'pointer' }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), rgba(139,124,246,0.4))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.25rem', fontWeight: 700, color: '#fff', margin: '0 auto 0.875rem',
+                  }}>
+                    {p.name?.[0]?.toUpperCase()}
                   </div>
-                  <span style={{ color: 'var(--fg-muted)', fontSize: '1.1rem', flexShrink: 0 }}>→</span>
+                  <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.2rem', color: 'var(--fg)' }}>{p.name}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', margin: 0 }}>{p.bio?.slice(0, 50) || 'co11abor8 member'}</p>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
-        )}
+        </>
+      )}
+
+      {/* ── Footer note ────────────────────────────────────────── */}
+      <div style={{ marginTop: '5rem', paddingBottom: '2rem' }}>
+        <p style={{ fontSize: '0.78rem', color: 'var(--fg-muted)', margin: 0 }}>
+          co11abor8 — a quiet place to connect and build
+        </p>
       </div>
     </div>
   );
