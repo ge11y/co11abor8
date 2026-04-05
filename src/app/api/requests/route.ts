@@ -1,45 +1,45 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { sql, initDb } from '@/lib/db';
+import { getAllRequests, getRequestsForCreator, getRequestsByRequester, createRequest } from '@/lib/db';
 import { generateId } from '@/lib/store';
 
-export async function GET() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    const rows = await sql`
-      SELECT id, creator_id, requester_name, requester_contact, project_idea,
-             status, help_needed, vision, submission_type, time_slot,
-             submitted_at, admin_status
-      FROM requests ORDER BY submitted_at DESC
-    ` as any[];
-    return NextResponse.json(rows.map(row => ({
-      id: row.id, creatorId: row.creator_id, requesterName: row.requester_name,
-      requesterContact: row.requester_contact, projectIdea: row.project_idea,
-      status: row.status, helpNeeded: row.help_needed, vision: row.vision,
-      submissionType: row.submission_type, timeSlot: row.time_slot,
-      submittedAt: row.submitted_at, adminStatus: row.admin_status,
-    })));
-  }
-
-  const rows = await sql`
-    SELECT id, creator_id, requester_name, requester_contact, project_idea,
-           status, help_needed, vision, submission_type, time_slot,
-           submitted_at, reviewed_at, admin_status, notes
-    FROM requests
-    WHERE creator_id = ${user.id}
-       OR requester_contact = ${user.email}
-    ORDER BY submitted_at DESC
-  ` as any[];
-
-  return NextResponse.json(rows.map(row => ({
+function rowToRequest(row: any) {
+  return {
     id: row.id, creatorId: row.creator_id, requesterName: row.requester_name,
     requesterContact: row.requester_contact, projectIdea: row.project_idea,
     status: row.status, helpNeeded: row.help_needed, vision: row.vision,
     submissionType: row.submission_type, timeSlot: row.time_slot,
     submittedAt: row.submitted_at, reviewedAt: row.reviewed_at,
     adminStatus: row.admin_status, notes: row.notes || '',
-  })));
+  };
+}
+
+export async function GET() {
+  let user = null;
+  try {
+    user = await getCurrentUser();
+  } catch (err) {
+    console.error('getCurrentUser error:', err);
+  }
+
+  if (!user) {
+    const rows = await getAllRequests();
+    return NextResponse.json(Array.isArray(rows) ? rows.map(rowToRequest) : []);
+  }
+
+  try {
+    const [inbound, outbound] = await Promise.all([
+      getRequestsForCreator(user.id),
+      getRequestsByRequester(user.email),
+    ]);
+
+    const map = new Map();
+    [...(inbound || []), ...(outbound || [])].forEach(r => map.set(r.id, r));
+    return NextResponse.json([...map.values()].map(rowToRequest));
+  } catch (err) {
+    console.error('Requests query error:', err);
+    return NextResponse.json({ error: 'Failed to load requests', detail: String(err) }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
@@ -52,16 +52,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing required fields.' }, { status: 400 });
     }
 
-    await initDb();
     const id = generateId();
-
-    await sql`
-      INSERT INTO requests (id, creator_id, requester_name, requester_contact, project_idea,
-                           status, help_needed, vision, submission_type, admin_status)
-      VALUES (${id}, ${creatorId}, ${requesterName}, ${requesterContact}, ${projectIdea},
-              ${status || 'in_progress'}, ${helpNeeded}, ${vision || ''},
-              ${submissionType || 'collaboration'}, 'open')
-    `;
+    const result = await createRequest({
+      id,
+      creator_id: creatorId,
+      requester_name: requesterName,
+      requester_contact: requesterContact,
+      project_idea: projectIdea,
+      status: status || 'in_progress',
+      help_needed: helpNeeded,
+      vision: vision || '',
+      submission_type: submissionType || 'collaboration',
+      time_slot: '',
+      admin_status: 'open',
+      submitted_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({ id }, { status: 201 });
   } catch (err) {
