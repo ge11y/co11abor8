@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -8,6 +8,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect if already logged in
+  useEffect(() => {
+    fetch('/api/auth/me').then(r => r.json()).then(d => {
+      if (d.user) router.push('/dashboard');
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +31,6 @@ export default function LoginPage() {
       if (!res.ok) { setError(data.error || 'Login failed.'); return; }
       localStorage.setItem('co11ab_user', JSON.stringify(data.user));
       router.push('/dashboard');
-      router.refresh();
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -34,10 +40,10 @@ export default function LoginPage() {
 
   return (
     <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: 'clamp(4rem, 10vh, 7rem)' }}>
-      <div className="card card-glow animate-fade-up" style={{ padding: 'clamp(2rem, 5vw, 3rem)' }}>
+      <div className="card animate-fade-up" style={{ padding: 'clamp(2rem, 5vw, 3rem)', border: '1px solid var(--border)' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>Welcome back</h1>
-          <p style={{ color: 'var(--fg-muted)', fontSize: '0.875rem', margin: 0 }}>Sign in to your account</p>
+          <h1 style={{ fontSize: '1.5rem', marginBottom: '0.4rem' }}>Sign in</h1>
+          <p style={{ color: 'var(--fg-secondary)', fontSize: '0.875rem', margin: 0 }}>Access your dashboard and requests</p>
         </div>
 
         <form onSubmit={handleSubmit}>
@@ -63,9 +69,11 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && <p style={{ color: 'var(--status-declined)', fontSize: '0.82rem', marginTop: '0.75rem', textAlign: 'center' }}>{error}</p>}
+          {error && (
+            <p style={{ color: 'var(--fg-secondary)', fontSize: '0.82rem', marginTop: '0.75rem', textAlign: 'center' }}>{error}</p>
+          )}
 
-          <button type="submit" className="btn" style={{ width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '0.8rem' }} disabled={loading}>
+          <button type="submit" className="btn" disabled={loading} style={{ width: '100%', marginTop: '1.5rem', justifyContent: 'center', padding: '0.85rem' }}>
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
@@ -73,7 +81,7 @@ export default function LoginPage() {
 
       <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--fg-muted)', marginTop: '1.5rem' }}>
         Don't have an account?{' '}
-        <a href="/register" style={{ color: 'var(--accent)', textDecoration: 'none' }}>Create one</a>
+        <a href="/submit" style={{ color: 'var(--fg-secondary)', textDecoration: 'none', fontWeight: 500 }}>Get my link</a>
       </p>
     </div>
   );
