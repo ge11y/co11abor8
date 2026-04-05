@@ -89,7 +89,7 @@ export default function PublicProfile() {
       <div style={{
         position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)',
         width: '55vw', height: '35vh',
-        background: 'radial-gradient(ellipse, rgba(139,124,246,0.07) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 70% 50% at 50% -10%, rgba(255,255,255,0.04) 0%, transparent 70%)',
         pointerEvents: 'none', zIndex: 0,
       }} />
 
@@ -97,9 +97,9 @@ export default function PublicProfile() {
       <div className="card card-glow animate-fade-up" style={{ position: 'relative', zIndex: 1, textAlign: 'center', padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 5vw, 3.5rem)', marginBottom: '1.5rem' }}>
         <div style={{
           width: 88, height: 88, borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--accent) 0%, rgba(139,124,246,0.4) 100%)',
-          border: '2px solid rgba(139,124,246,0.25)',
-          boxShadow: '0 0 40px rgba(139,124,246,0.18)',
+          background: 'linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.12) 100%)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          boxShadow: '0 0 40px rgba(255,255,255,0.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '2.25rem', fontWeight: 700, color: '#fff',
           margin: '0 auto 1.5rem', letterSpacing: '-0.02em',
@@ -129,7 +129,7 @@ export default function PublicProfile() {
 
         {profile.schedulingUrl && (
           <a href={profile.schedulingUrl} target="_blank" rel="noopener noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'var(--accent-dim)', border: '1px solid rgba(139,124,246,0.25)', color: 'var(--accent)', borderRadius: 'var(--radius-badge)', padding: '0.5rem 1.1rem', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', marginTop: '0.5rem' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.2)', color: 'var(--accent)', borderRadius: 'var(--radius-badge)', padding: '0.5rem 1.1rem', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none', marginTop: '0.5rem' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             {profile.schedulingLabel || 'Book a time'}
           </a>

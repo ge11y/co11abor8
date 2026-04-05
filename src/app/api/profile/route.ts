@@ -1,46 +1,33 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { sql } from '@/lib/db';
+import { getUserBySlug, getAllUsers, updateUser } from '@/lib/db';
 
-// GET: fetch public profile by slug (no auth required)
+function rowToProfile(row: any) {
+  return {
+    id: row.id, slug: row.slug, name: row.name, bio: row.bio || '',
+    socials: { x: row.socials_x, instagram: row.socials_instagram, linkedin: row.socials_linkedin },
+    schedulingUrl: row.scheduling_url || '', schedulingLabel: row.scheduling_label || 'Book a time',
+  };
+}
+
+// GET /api/profile — list all profiles or single by slug
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const slug = searchParams.get('slug');
 
   if (!slug) {
-    const rows = await sql`
-      SELECT id, slug, name, bio, socials_x, socials_instagram, socials_linkedin,
-             scheduling_url, scheduling_label
-      FROM users WHERE slug IS NOT NULL
-      ORDER BY created_at DESC
-    ` as any[];
-
-    return NextResponse.json(rows.map(row => ({
-      id: row.id, slug: row.slug, name: row.name, bio: row.bio || '',
-      socials: { x: row.socials_x, instagram: row.socials_instagram, linkedin: row.socials_linkedin },
-      schedulingUrl: row.scheduling_url || '', schedulingLabel: row.scheduling_label || 'Book a time',
-    })));
+    const rows = await getAllUsers();
+    return NextResponse.json(Array.isArray(rows) ? rows.map(rowToProfile) : []);
   }
 
-  const rows = await sql`
-    SELECT id, slug, name, bio, socials_x, socials_instagram, socials_linkedin,
-           scheduling_url, scheduling_label
-    FROM users WHERE slug = ${slug}
-  ` as any[];
-
-  if (rows.length === 0) {
+  const rows = await getUserBySlug(slug);
+  if (!rows || rows.length === 0) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-
-  const row = rows[0];
-  return NextResponse.json({
-    id: row.id, slug: row.slug, name: row.name, bio: row.bio || '',
-    socials: { x: row.socials_x, instagram: row.socials_instagram, linkedin: row.socials_linkedin },
-    schedulingUrl: row.scheduling_url || '', schedulingLabel: row.scheduling_label || 'Book a time',
-  });
+  return NextResponse.json(rowToProfile(rows[0]));
 }
 
-// PATCH: update own profile (auth required)
+// PATCH /api/profile — update own profile (auth required)
 export async function PATCH(req: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -49,25 +36,18 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { name, slug, bio, socials, schedulingUrl, schedulingLabel } = body;
 
-    if (slug && slug !== (user as any).slug) {
-      const existing = await sql`SELECT id FROM users WHERE slug = ${slug} AND id != ${user.id}` as any[];
-      if (existing.length > 0) {
-        return NextResponse.json({ error: 'That link is taken.' }, { status: 409 });
-      }
-    }
-
-    await sql`
-      UPDATE users SET
-        name = ${name ?? (user as any).name ?? ''},
-        slug = ${slug ?? (user as any).slug ?? ''},
-        bio = ${bio ?? (user as any).bio ?? ''},
-        socials_x = ${socials?.x ?? (user as any).socials?.x ?? ''},
-        socials_instagram = ${socials?.instagram ?? (user as any).socials?.instagram ?? ''},
-        socials_linkedin = ${socials?.linkedin ?? (user as any).socials?.linkedin ?? ''},
-        scheduling_url = ${schedulingUrl ?? (user as any).schedulingUrl ?? ''},
-        scheduling_label = ${schedulingLabel ?? (user as any).schedulingLabel ?? 'Book a time'}
-      WHERE id = ${user.id}
-    `;
+    await updateUser(user.id, {
+      ...(name !== undefined && { name }),
+      ...(slug !== undefined && { slug }),
+      ...(bio !== undefined && { bio }),
+      ...(socials !== undefined && {
+        socials_x: socials.x ?? '',
+        socials_instagram: socials.instagram ?? '',
+        socials_linkedin: socials.linkedin ?? '',
+      }),
+      ...(schedulingUrl !== undefined && { scheduling_url: schedulingUrl }),
+      ...(schedulingLabel !== undefined && { scheduling_label: schedulingLabel }),
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

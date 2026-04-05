@@ -45,10 +45,10 @@ export default function DashboardPage() {
     setUser(JSON.parse(stored));
 
     Promise.all([
-      fetch('/api/requests').then(r => r.ok ? r.json() : []),
+      fetch('/api/requests').then(r => r.ok ? r.json() : { requests: [], authenticated: false }),
       fetch('/api/profile').then(r => r.ok ? r.json() : []),
     ]).then(([reqData, profileData]) => {
-      setRequests(Array.isArray(reqData) ? reqData : []);
+      setRequests(Array.isArray(reqData) ? reqData : (reqData.requests || []));
       setProfiles(Array.isArray(profileData) ? profileData : []);
       setLoading(false);
     });

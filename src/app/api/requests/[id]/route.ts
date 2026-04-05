@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
-import { sql } from '@/lib/db';
+import { getRequestById, updateRequest } from '@/lib/db';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -8,19 +8,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
   const body = await req.json();
-
-  const existing = await sql`SELECT creator_id FROM requests WHERE id = ${id}` as any[];
-  if (existing.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (existing[0].creator_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-
   const { adminStatus, notes } = body;
 
-  if (adminStatus !== undefined) {
-    await sql`UPDATE requests SET admin_status = ${adminStatus}, reviewed_at = NOW() WHERE id = ${id}`;
-  }
-  if (notes !== undefined) {
-    await sql`UPDATE requests SET notes = ${notes} WHERE id = ${id}`;
-  }
+  const rows = await getRequestById(id);
+  if (!rows || rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (rows[0].creator_id !== user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
+  const updates: Record<string, unknown> = {};
+  if (adminStatus !== undefined) updates.admin_status = adminStatus;
+  if (notes !== undefined) updates.notes = notes;
+
+  await updateRequest(id, updates);
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sql } from '@/lib/db';
+import { getUserByEmail } from '@/lib/db';
 import { verifyPassword, signToken, setSessionCookie } from '@/lib/auth';
 
 export async function POST(req: Request) {
@@ -11,17 +11,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Email and password required.' }, { status: 400 });
     }
 
-    const rows = await sql`
-      SELECT id, email, slug, name, bio, socials_x, socials_instagram, socials_linkedin,
-             scheduling_url, scheduling_label, password_hash
-      FROM users WHERE email = ${email.toLowerCase()}
-    ` as any[];
+    const rows = await getUserByEmail(email.toLowerCase());
+    const user = rows[0];
 
-    if (rows.length === 0) {
+    if (!user) {
       return NextResponse.json({ error: 'No account found with that email.' }, { status: 401 });
     }
 
-    const user = rows[0];
     const valid = await verifyPassword(password, user.password_hash);
     if (!valid) {
       return NextResponse.json({ error: 'Incorrect password.' }, { status: 401 });

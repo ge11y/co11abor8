@@ -20,11 +20,14 @@ export async function GET() {
     user = await getCurrentUser();
   } catch (err) {
     console.error('getCurrentUser error:', err);
+    return NextResponse.json({ error: 'Auth check failed', detail: String(err) }, { status: 500 });
   }
+
+  console.log('GET /api/requests — user:', user?.id, user?.email);
 
   if (!user) {
     const rows = await getAllRequests();
-    return NextResponse.json(Array.isArray(rows) ? rows.map(rowToRequest) : []);
+    return NextResponse.json({ requests: Array.isArray(rows) ? rows.map(rowToRequest) : [], authenticated: false });
   }
 
   try {
@@ -35,7 +38,11 @@ export async function GET() {
 
     const map = new Map();
     [...(inbound || []), ...(outbound || [])].forEach(r => map.set(r.id, r));
-    return NextResponse.json([...map.values()].map(rowToRequest));
+    return NextResponse.json({
+      requests: [...map.values()].map(rowToRequest),
+      authenticated: true,
+      userId: user.id,
+    });
   } catch (err) {
     console.error('Requests query error:', err);
     return NextResponse.json({ error: 'Failed to load requests', detail: String(err) }, { status: 500 });

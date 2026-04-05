@@ -1,154 +1,199 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-
-interface PublicProfile {
-  id: string;
-  slug: string;
-  name: string;
-  bio: string;
-  socials: { x?: string; instagram?: string; linkedin?: string };
-  schedulingUrl: string;
-  schedulingLabel: string;
-}
 
 export default function HomePage() {
-  const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [search, setSearch] = useState('');
-  const [profiles, setProfiles] = useState<PublicProfile[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchFocused, setSearchFocused] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(data => {
-      setUser(data.user);
+    Promise.all([
+      fetch('/api/auth/me').then(r => r.json()),
+      fetch('/api/profile').then(r => r.json()),
+    ]).then(([userData, profileData]) => {
+      setUser(userData.user || null);
+      setProfiles(Array.isArray(profileData) ? profileData : []);
       setLoading(false);
-    });
-    fetch('/api/profile').then(r => r.json()).then(data => {
-      setProfiles(Array.isArray(data) ? data : []);
     });
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!search.trim()) return;
-    const found = profiles.find(p =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.slug.toLowerCase().includes(search.toLowerCase())
-    );
-    if (found) {
-      router.push(`/p/${found.slug}`);
-    } else {
-      alert('No profile found for that name. Check the link or ask them to create one.');
-    }
-  };
-
-  const suggested = profiles.slice(0, 4);
-
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+    <div style={{ maxWidth: 900, margin: '0 auto' }}>
 
-      {/* ── Hero ──────────────────────────────────────────────── */}
-      <div style={{ paddingTop: 'clamp(4rem, 12vh, 8rem)', paddingBottom: '3rem' }} className="animate-fade-up">
-        <h1 style={{ fontSize: 'clamp(2.25rem, 5vw, 3.5rem)', letterSpacing: '-0.03em', marginBottom: '1.25rem', lineHeight: 1.1 }}>
-          Collaborate with<br />
-          <span style={{ color: 'var(--accent)' }}>people worth knowing</span>
-        </h1>
-        <p style={{ color: 'var(--fg-secondary)', fontSize: 'clamp(1rem, 2vw, 1.15rem)', maxWidth: 480, margin: '0 auto 2.5rem', lineHeight: 1.65 }}>
-          Find someone, send a request, and start working together. No noise, no friction.
-        </p>
-      </div>
-
-      {/* ── Search ────────────────────────────────────────────── */}
-      <form onSubmit={handleSearch} className="animate-fade-up stagger-1" style={{ marginBottom: '4rem', position: 'relative' }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '0.75rem',
-          background: searchFocused ? 'var(--surface-2)' : 'var(--surface-1)',
-          border: `1.5px solid ${searchFocused ? 'var(--accent)' : 'var(--border)'}`,
-          borderRadius: 'var(--radius-badge)', padding: '0.875rem 1.25rem',
-          boxShadow: searchFocused ? '0 0 0 4px var(--accent-dim)' : 'none',
-          transition: 'all var(--t-mid) var(--ease-out)',
-          maxWidth: 520, margin: '0 auto',
+      {/* ── Hero ─────────────────────────────────────────────── */}
+      <section style={{
+        paddingTop: 'clamp(6rem, 18vh, 11rem)',
+        paddingBottom: 'clamp(5rem, 12vh, 9rem)',
+        textAlign: 'center',
+      }}>
+        <h1 className="animate-fade-up" style={{
+          marginBottom: '1.75rem',
+          fontStyle: 'italic',
+          fontWeight: 400,
         }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--fg-muted)', flexShrink: 0 }}>
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Search for someone by name or link…"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            style={{
-              flex: 1, background: 'transparent', border: 'none', outline: 'none',
-              color: 'var(--fg)', fontSize: '0.95rem', fontFamily: 'inherit',
-            }}
-          />
-          <button type="submit" style={{
-            background: 'var(--accent)', color: '#fff', border: 'none',
-            borderRadius: '6px', padding: '0.4rem 0.9rem', fontSize: '0.8rem',
-            fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            flexShrink: 0,
-          }}>
-            Find
-          </button>
-        </div>
-        <p style={{ fontSize: '0.78rem', color: 'var(--fg-muted)', marginTop: '0.75rem' }}>
-          Or share your link so others can find you
+          A quiet place to
+          <br />
+          <span style={{ fontStyle: 'normal', fontWeight: 300, letterSpacing: '-0.03em' }}>
+            collaborate
+          </span>
+        </h1>
+
+        <p className="animate-fade-up stagger-1" style={{
+          color: 'var(--fg-secondary)',
+          maxWidth: 380,
+          margin: '0 auto 3rem',
+          fontSize: 'clamp(0.95rem, 1.5vw, 1.05rem)',
+          lineHeight: 1.75,
+        }}>
+          Share who you are. Find people worth working with.
+          Submit a request. Get a response.
         </p>
-      </form>
 
-      {/* ── Auth CTAs ──────────────────────────────────────────── */}
-      {!loading && !user && (
-        <div className="animate-fade-up stagger-2" style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '4rem' }}>
-          <a href="/login" className="btn" style={{ padding: '0.8rem 2rem' }}>Sign in</a>
-          <a href="/register" className="btn btn-outline" style={{ padding: '0.8rem 2rem' }}>Create your link</a>
+        <div className="animate-fade-up stagger-2" style={{
+          display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap'
+        }}>
+          <a href="/submit" className="btn" style={{ padding: '0.8rem 2.25rem', fontSize: '0.9rem' }}>
+            Get my link →
+          </a>
+          {profiles.length > 0 && (
+            <a href="#people" className="btn btn-outline" style={{ padding: '0.8rem 2.25rem', fontSize: '0.9rem' }}>
+              Browse people
+            </a>
+          )}
         </div>
-      )}
-      {!loading && user && (
-        <div className="animate-fade-up stagger-2" style={{ display: 'flex', gap: '0.875rem', justifyContent: 'center', flexWrap: 'wrap', marginBottom: '4rem' }}>
-          <a href="/dashboard" className="btn" style={{ padding: '0.8rem 2rem' }}>My Dashboard</a>
-          <a href={`/p/${user.slug}`} className="btn btn-outline" style={{ padding: '0.8rem 2rem' }}>View my link</a>
-        </div>
-      )}
+      </section>
 
-      {/* ── Divider ─────────────────────────────────────────────── */}
+      {/* ── Divider ─────────────────────────────────────────── */}
+      <div className="animate-fade-up stagger-2" style={{
+        maxWidth: 48, margin: '0 auto 5rem',
+        borderTop: '1px solid var(--border)',
+      }} />
+
+      {/* ── How it works ────────────────────────────────────── */}
+      <section className="animate-fade-up stagger-3" style={{ paddingBottom: 'clamp(5rem, 10vh, 8rem)' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '3.5rem' }}>How it works</h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1px', background: 'var(--border)', borderRadius: 'var(--radius-card)', overflow: 'hidden' }}>
+          {[
+            {
+              n: '01',
+              title: 'Get your link',
+              desc: 'Create a free profile and claim your co11abor8 link. Share it with anyone.',
+            },
+            {
+              n: '02',
+              title: 'Receive requests',
+              desc: 'People submit requests through your link — project ideas, collaborations, status updates.',
+            },
+            {
+              n: '03',
+              title: 'Respond & connect',
+              desc: 'Review and manage requests in your dashboard. Move things forward without noise.',
+            },
+          ].map((step) => (
+            <div key={step.n} style={{
+              background: 'var(--card)',
+              padding: '2.5rem 2rem',
+            }}>
+              <div style={{
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                color: 'var(--fg-muted)',
+                marginBottom: '1.5rem',
+                fontFamily: 'DM Sans, sans-serif',
+              }}>
+                {step.n}
+              </div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '0.6rem' }}>
+                {step.title}
+              </h3>
+              <p style={{ fontSize: '0.875rem', color: 'var(--fg-secondary)', lineHeight: 1.7, margin: 0 }}>
+                {step.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── People on the platform ──────────────────────────── */}
       {profiles.length > 0 && (
-        <>
-          <div className="divider" />
-          <div className="animate-fade-up stagger-3" style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-            <p style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--fg-muted)', fontWeight: 600, margin: 0 }}>
-              People on co11abor8
-            </p>
+        <section id="people" className="animate-fade-up" style={{ paddingBottom: 'clamp(5rem, 10vh, 8rem)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '2.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0 }}>People</h2>
+            <a href="/requests" style={{ fontSize: '0.8rem', color: 'var(--fg-muted)', textDecoration: 'none' }}>
+              View all →
+            </a>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.875rem' }} className="animate-fade-up stagger-4">
-            {suggested.map(p => (
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1px', background: 'var(--border)', borderRadius: 'var(--radius-card)', overflow: 'hidden' }}>
+            {profiles.slice(0, 6).map((p) => (
               <a key={p.id} href={`/p/${p.slug}`} style={{ textDecoration: 'none' }}>
-                <div className="card" style={{ textAlign: 'center', padding: '1.5rem 1.25rem', cursor: 'pointer' }}>
+                <div style={{
+                  background: 'var(--card)',
+                  textAlign: 'center',
+                  padding: '2rem 1.25rem',
+                  transition: 'background var(--t-mid) var(--ease-out)',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--card-hover)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--card)')}>
                   <div style={{
-                    width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), rgba(139,124,246,0.4))',
+                    width: 52, height: 52, borderRadius: '50%',
+                    border: '1px solid var(--border-hover)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.25rem', fontWeight: 700, color: '#fff', margin: '0 auto 0.875rem',
+                    fontSize: '1.2rem', fontWeight: 600, color: 'var(--fg)',
+                    margin: '0 auto 1rem', letterSpacing: '-0.01em',
                   }}>
                     {p.name?.[0]?.toUpperCase()}
                   </div>
-                  <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.2rem', color: 'var(--fg)' }}>{p.name}</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--fg-muted)', margin: 0 }}>{p.bio?.slice(0, 50) || 'co11abor8 member'}</p>
+                  <p style={{ fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--fg)' }}>
+                    {p.name}
+                  </p>
+                  {p.bio && (
+                    <p style={{ fontSize: '0.72rem', color: 'var(--fg-muted)', margin: 0, lineHeight: 1.5 }}>
+                      {p.bio.slice(0, 55)}{p.bio.length > 55 ? '…' : ''}
+                    </p>
+                  )}
                 </div>
               </a>
             ))}
           </div>
-        </>
+        </section>
       )}
 
-      {/* ── Footer note ────────────────────────────────────────── */}
-      <div style={{ marginTop: '5rem', paddingBottom: '2rem' }}>
-        <p style={{ fontSize: '0.78rem', color: 'var(--fg-muted)', margin: 0 }}>
-          co11abor8 — a quiet place to connect and build
-        </p>
-      </div>
+      {/* ── CTA footer ──────────────────────────────────────── */}
+      <section style={{ paddingBottom: 'clamp(4rem, 8vh, 6rem)' }}>
+        <div style={{
+          borderTop: '1px solid var(--border)',
+          paddingTop: 'clamp(3.5rem, 7vh, 6rem)',
+          textAlign: 'center',
+        }}>
+          <h2 style={{ marginBottom: '1rem' }}>Ready?</h2>
+          <p style={{
+            color: 'var(--fg-secondary)',
+            fontSize: '0.95rem',
+            maxWidth: 340,
+            margin: '0 auto 2.5rem',
+            lineHeight: 1.7,
+          }}>
+            {user
+              ? <>Visit your <a href={`/p/${user.slug}`} style={{ color: 'var(--fg)', textDecoration: 'none', fontWeight: 600 }}>public profile</a> or <a href="/dashboard" style={{ color: 'var(--fg)', textDecoration: 'none', fontWeight: 600 }}>dashboard</a>.</>
+              : <>Create your free link and start receiving thoughtful collaboration requests.</>
+            }
+          </p>
+          {user ? (
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a href={`/p/${user.slug}`} className="btn" style={{ padding: '0.8rem 2rem' }}>View my link</a>
+              <a href="/dashboard" className="btn btn-outline" style={{ padding: '0.8rem 2rem' }}>Dashboard</a>
+            </div>
+          ) : (
+            <a href="/submit" className="btn" style={{ padding: '0.85rem 2.5rem', fontSize: '0.9rem' }}>
+              Get my link →
+            </a>
+          )}
+        </div>
+      </section>
+
     </div>
   );
 }
