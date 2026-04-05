@@ -9,11 +9,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Redirect if already logged in
+  // Redirect if already logged in (check localStorage — no network needed)
   useEffect(() => {
-    fetch('/api/auth/me').then(r => r.json()).then(d => {
-      if (d.user) router.push('/dashboard');
-    });
+    const stored = localStorage.getItem('co11ab_user');
+    if (stored) router.push('/dashboard');
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
