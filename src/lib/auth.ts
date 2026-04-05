@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
-import { sql } from './db';
-import { User, Socials } from './types';
+import { getUserByEmail, createUser, updateUser, getUserById } from './db';
+import { generateId } from './store';
+import { User } from './types';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'co11abor8-secret-key-change-in-production';
 const COOKIE_NAME = 'co11ab_session';
@@ -43,6 +44,25 @@ export async function clearSessionCookie(): Promise<void> {
   cookieStore.delete(COOKIE_NAME);
 }
 
+function dbRowToUser(row: any): User {
+  return {
+    id: row.id,
+    email: row.email,
+    slug: row.slug,
+    name: row.name,
+    passwordHash: row.password_hash,
+    bio: row.bio || '',
+    socials: {
+      x: row.socials_x || '',
+      instagram: row.socials_instagram || '',
+      linkedin: row.socials_linkedin || '',
+    },
+    schedulingUrl: row.scheduling_url || '',
+    schedulingLabel: row.scheduling_label || 'Book a time',
+    createdAt: row.created_at,
+  };
+}
+
 export async function getCurrentUser(): Promise<User | null> {
   try {
     const cookieStore = await cookies();
@@ -50,33 +70,11 @@ export async function getCurrentUser(): Promise<User | null> {
     if (!token) return null;
     const payload = verifyToken(token);
     if (!payload) return null;
-
-    const result = await sql`
-      SELECT id, email, slug, name, bio, socials_x, socials_instagram, socials_linkedin,
-             scheduling_url, scheduling_label, created_at
-      FROM users WHERE id = ${payload.userId}
-    `;
-
-    const rows = result as any[];
-    if (rows.length === 0) return null;
-    const row = rows[0];
-    return {
-      id: row.id,
-      email: row.email,
-      slug: row.slug,
-      name: row.name,
-      bio: row.bio || '',
-      socials: {
-        x: row.socials_x || '',
-        instagram: row.socials_instagram || '',
-        linkedin: row.socials_linkedin || '',
-      },
-      schedulingUrl: row.scheduling_url || '',
-      schedulingLabel: row.scheduling_label || 'Book a time',
-      createdAt: row.created_at,
-      passwordHash: '',
-    };
-  } catch {
+    const row = await getUserById(payload.userId);
+    if (!row) return null;
+    return dbRowToUser(row);
+  } catch (err) {
+    console.error('getCurrentUser error:', err);
     return null;
   }
 }
