@@ -190,14 +190,14 @@ function InboundTab({ requests, onUpdate }: { requests: Request[]; onUpdate: () 
     onUpdate();
   };
 
-  const saveNotes = async (id: string, notes: string) => {
+  const saveNotes = async (id: string, notes: string, isShared: boolean) => {
     const token = localStorage.getItem('co11ab_token') || '';
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    setSavingNotes(id);
+    setSavingNotes(id + (isShared ? '_shared' : '_private'));
     await fetch('/api/requests/' + id, {
       method: 'PATCH', headers, credentials: 'include',
-      body: JSON.stringify({ notes }),
+      body: JSON.stringify(isShared ? { sharedNotes: notes } : { notes }),
     });
     setSavingNotes(null);
     onUpdate();
@@ -303,14 +303,32 @@ function InboundTab({ requests, onUpdate }: { requests: Request[]; onUpdate: () 
                 </div>
               </div>
 
-              {/* Notes */}
+              {/* Notes — side by side */}
               <div style={{ marginTop: '1.25rem' }}>
-                <p style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--fg-muted)', marginBottom: '0.6rem' }}>Private notes</p>
-                <NotesField
-                  currentNotes={req.notes || ''}
-                  saving={savingNotes === req.id}
-                  onSave={(notes) => saveNotes(req.id, notes)}
-                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <p style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--fg-muted)', marginBottom: '0.6rem' }}>
+                      Private notes
+                    </p>
+                    <NotesField
+                      currentNotes={req.notes || ''}
+                      saving={savingNotes === req.id + '_private'}
+                      onSave={(notes) => saveNotes(req.id, notes, false)}
+                      label="Private notes"
+                    />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: '0.72rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--fg-muted)', marginBottom: '0.6rem' }}>
+                      Shared notes
+                    </p>
+                    <NotesField
+                      currentNotes={req.sharedNotes || ''}
+                      saving={savingNotes === req.id + '_shared'}
+                      onSave={(notes) => saveNotes(req.id, notes, true)}
+                      label="Shared notes"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -580,7 +598,7 @@ function ProfileTab({ user, onUpdate }: { user: User; onUpdate: (u: User) => voi
 
 // ─── Notes field ─────────────────────────────────────────────────────────────────
 
-function NotesField({ currentNotes, saving, onSave }: { currentNotes: string; saving: boolean; onSave: (n: string) => void }) {
+function NotesField({ currentNotes, saving, onSave, label }: { currentNotes: string; saving: boolean; onSave: (n: string) => void; label: string }) {
   const [notes, setNotes] = useState(currentNotes);
   const [saved, setSaved] = useState(false);
   const handleSave = () => { onSave(notes); setSaved(true); setTimeout(() => setSaved(false), 2000); };
@@ -592,7 +610,7 @@ function NotesField({ currentNotes, saving, onSave }: { currentNotes: string; sa
         onChange={e => setNotes(e.target.value)}
         rows={3}
         style={{ minHeight: 80, marginBottom: '0.75rem' }}
-        placeholder="Private notes — only you can see these…"
+        placeholder={label === 'Shared notes' ? 'Notes visible to both parties…' : 'Private notes — only you can see these…'}
       />
       <button className="btn btn-sm" onClick={handleSave} disabled={saving}>
         {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Note'}

@@ -11,6 +11,7 @@ function rowToRequest(row: any) {
     submissionType: row.submission_type, timeSlot: row.time_slot,
     submittedAt: row.submitted_at, reviewedAt: row.reviewed_at,
     adminStatus: row.admin_status, notes: row.notes || '',
+    sharedNotes: row.shared_notes || '',
   };
 }
 
