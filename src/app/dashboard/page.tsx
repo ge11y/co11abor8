@@ -45,7 +45,7 @@ export default function DashboardPage() {
     setUser(JSON.parse(stored));
 
     Promise.all([
-      fetch('/api/requests').then(r => r.ok ? r.json() : { requests: [], authenticated: false }),
+      fetch('/api/requests', { credentials: 'include' }).then(r => r.ok ? r.json() : { requests: [], authenticated: false }),
       fetch('/api/profile').then(r => r.ok ? r.json() : []),
     ]).then(([reqData, profileData]) => {
       setRequests(Array.isArray(reqData) ? reqData : (reqData.requests || []));
@@ -146,11 +146,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {tab === 'inbound' && <InboundTab requests={inbound} onUpdate={() => {
-        fetch('/api/requests').then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
+      {tab === 'inbound' && <InboundTab requests={inbound}      onUpdate={() => {
+        fetch('/api/requests', { credentials: 'include' }).then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
       }} />}
       {tab === 'outbound' && <OutboundTab requests={outbound} profiles={profiles} onSubmit={() => {
-        fetch('/api/requests').then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
+        fetch('/api/requests', { credentials: 'include' }).then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
       }} />}
       {tab === 'profile' && <ProfileTab user={user} onUpdate={(u) => {
         setUser(u); localStorage.setItem('co11ab_user', JSON.stringify(u));
@@ -170,6 +170,7 @@ function InboundTab({ requests, onUpdate }: { requests: Request[]; onUpdate: () 
     setStatusSaving(id);
     await fetch(`/api/requests/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ adminStatus }),
     });
     setStatusSaving(null);
@@ -178,8 +179,9 @@ function InboundTab({ requests, onUpdate }: { requests: Request[]; onUpdate: () 
 
   const saveNotes = async (id: string, notes: string) => {
     setSavingNotes(id);
-    await fetch(`/api/requests/${id}`, {
+    await fetch('/api/requests/' + id, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ notes }),
     });
     setSavingNotes(null);
@@ -326,6 +328,7 @@ function OutboundTab({ requests, profiles, onSubmit }: { requests: Request[]; pr
     try {
       const res = await fetch('/api/requests', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ ...form, status: 'in_progress', submissionType: 'collaboration' }),
       });
       if (!res.ok) throw new Error();
@@ -462,7 +465,9 @@ function ProfileTab({ user, onUpdate }: { user: User; onUpdate: (u: User) => voi
     setSaving(true);
     try {
       const res = await fetch('/api/profile', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           name: form.name, slug: form.slug, bio: form.bio,
           socials: { x: form.x, instagram: form.instagram, linkedin: form.linkedin },
