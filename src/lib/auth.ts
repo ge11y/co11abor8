@@ -63,16 +63,29 @@ function dbRowToUser(row: any): User {
   };
 }
 
-export async function getCurrentUser(): Promise<User | null> {
+export async function getCurrentUser(req?: Request): Promise<User | null> {
   try {
+    // Try Authorization header first (for client-side API calls)
+    if (req) {
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.slice(7);
+        const payload = verifyToken(token);
+        if (payload) {
+          const row = await getUserById(payload.userId);
+          if (row?.[0]) return dbRowToUser(row[0]);
+        }
+      }
+    }
+    // Fall back to cookie (for server-side calls)
     const cookieStore = await cookies();
-    const token = cookieStore.get(COOKIE_NAME)?.value;
+    const token=cookieStore.get(COOKIE_NAME)?.value;
     if (!token) return null;
     const payload = verifyToken(token);
     if (!payload) return null;
     const row = await getUserById(payload.userId);
-    if (!row) return null;
-    return dbRowToUser(row);
+    if (!row?.[0]) return null;
+    return dbRowToUser(row[0]);
   } catch (err) {
     console.error('getCurrentUser error:', err);
     return null;

@@ -23,7 +23,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Incorrect password.' }, { status: 401 });
     }
 
-    const token = signToken(user.id);
+    const token=signToken(user.id);
     await setSessionCookie(token);
 
     return NextResponse.json({
@@ -33,7 +33,8 @@ export async function POST(req: Request) {
         socials: { x: user.socials_x, instagram: user.socials_instagram, linkedin: user.socials_linkedin },
         schedulingUrl: user.scheduling_url || '',
         schedulingLabel: user.scheduling_label || 'Book a time',
-      }
+      },
+      token,
     });
 
   } catch (err) {

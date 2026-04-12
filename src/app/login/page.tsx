@@ -29,6 +29,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Login failed.'); return; }
       localStorage.setItem('co11ab_user', JSON.stringify(data.user));
+      if (data.token) localStorage.setItem('co11ab_token', data.token);
       router.push('/dashboard');
     } catch {
       setError('Something went wrong. Please try again.');

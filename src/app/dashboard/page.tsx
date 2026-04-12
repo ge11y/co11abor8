@@ -45,7 +45,12 @@ export default function DashboardPage() {
     setUser(JSON.parse(stored));
 
     Promise.all([
-      fetch('/api/requests', { credentials: 'include' }).then(r => r.ok ? r.json() : { requests: [], authenticated: false }),
+      (() => {
+        const token = localStorage.getItem('co11ab_token') || '';
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return fetch('/api/requests', { headers, credentials: 'include' }).then(r => r.ok ? r.json() : { requests: [], authenticated: false });
+      })(),
       fetch('/api/profile').then(r => r.ok ? r.json() : []),
     ]).then(([reqData, profileData]) => {
       setRequests(Array.isArray(reqData) ? reqData : (reqData.requests || []));
@@ -147,10 +152,16 @@ export default function DashboardPage() {
       </div>
 
       {tab === 'inbound' && <InboundTab requests={inbound}      onUpdate={() => {
-        fetch('/api/requests', { credentials: 'include' }).then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
+        const token = localStorage.getItem('co11ab_token') || '';
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        fetch('/api/requests', { headers, credentials: 'include' }).then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
       }} />}
       {tab === 'outbound' && <OutboundTab requests={outbound} profiles={profiles} onSubmit={() => {
-        fetch('/api/requests', { credentials: 'include' }).then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
+        const token = localStorage.getItem('co11ab_token') || '';
+        const headers: Record<string, string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        fetch('/api/requests', { headers, credentials: 'include' }).then(r => r.ok ? r.json() : []).then(d => setRequests(Array.isArray(d) ? d : []));
       }} />}
       {tab === 'profile' && <ProfileTab user={user} onUpdate={(u) => {
         setUser(u); localStorage.setItem('co11ab_user', JSON.stringify(u));
@@ -167,10 +178,12 @@ function InboundTab({ requests, onUpdate }: { requests: Request[]; onUpdate: () 
   const [statusSaving, setStatusSaving] = useState<string | null>(null);
 
   const updateStatus = async (id: string, adminStatus: string) => {
+    const token = localStorage.getItem('co11ab_token') || '';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     setStatusSaving(id);
-    await fetch(`/api/requests/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+    await fetch('/api/requests/' + id, {
+      method: 'PATCH', headers, credentials: 'include',
       body: JSON.stringify({ adminStatus }),
     });
     setStatusSaving(null);
@@ -178,10 +191,12 @@ function InboundTab({ requests, onUpdate }: { requests: Request[]; onUpdate: () 
   };
 
   const saveNotes = async (id: string, notes: string) => {
+    const token = localStorage.getItem('co11ab_token') || '';
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     setSavingNotes(id);
     await fetch('/api/requests/' + id, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      method: 'PATCH', headers, credentials: 'include',
       body: JSON.stringify({ notes }),
     });
     setSavingNotes(null);
@@ -326,8 +341,11 @@ function OutboundTab({ requests, profiles, onSubmit }: { requests: Request[]; pr
     setError('');
     setSubmitting(true);
     try {
+      const token = localStorage.getItem('co11ab_token') || '';
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       const res = await fetch('/api/requests', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers,
         credentials: 'include',
         body: JSON.stringify({ ...form, status: 'in_progress', submissionType: 'collaboration' }),
       });
@@ -464,9 +482,12 @@ function ProfileTab({ user, onUpdate }: { user: User; onUpdate: (u: User) => voi
     setSlugError('');
     setSaving(true);
     try {
+      const token = localStorage.getItem('co11ab_token') || '';
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       const res = await fetch('/api/profile', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         credentials: 'include',
         body: JSON.stringify({
           name: form.name, slug: form.slug, bio: form.bio,

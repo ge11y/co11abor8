@@ -14,10 +14,10 @@ function rowToRequest(row: any) {
   };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   let user = null;
   try {
-    user = await getCurrentUser();
+    user = await getCurrentUser(req);
   } catch (err) {
     console.error('getCurrentUser error:', err);
     return NextResponse.json({ error: 'Auth check failed', detail: String(err) }, { status: 500 });

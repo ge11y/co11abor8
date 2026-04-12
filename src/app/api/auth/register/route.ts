@@ -51,11 +51,12 @@ export async function POST(req: Request) {
       created_at: new Date().toISOString(),
     });
 
-    const token = signToken(id);
+    const token=signToken(id);
     await setSessionCookie(token);
 
     return NextResponse.json({
-      user: { id, email: email.toLowerCase(), slug: safeSlug, name, bio: bio || '' }
+      user: { id, email: email.toLowerCase(), slug: safeSlug, name, bio: bio || '' },
+      token,
     }, { status: 201 });
 
   } catch (err) {

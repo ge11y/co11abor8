@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
 // PATCH /api/profile — update own profile (auth required)
 export async function PATCH(req: Request) {
-  const user = await getCurrentUser();
+  const user = await getCurrentUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {

@@ -203,6 +203,7 @@ export default function SubmitPage() {
       const loginData = await loginRes.json();
       if (loginRes.ok && loginData.user) {
         localStorage.setItem('co11ab_user', JSON.stringify(loginData.user));
+        if (loginData.token) localStorage.setItem('co11ab_token', loginData.token);
         window.location.href = '/dashboard';
         return;
       }
