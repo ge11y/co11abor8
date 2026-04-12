@@ -21,9 +21,9 @@
 
   /* — Text — */
   --fg:           #f5f5f5;
-  --fg-secondary: #888888;
-  --fg-muted:     #444444;
-  --fg-faint:     #222222;
+  --fg-secondary: #a8a8b0;
+  --fg-muted:     #666670;
+  --fg-faint:     #333340;
 
   /* — Accent: monochrome — */
   --accent:      #ffffff;
