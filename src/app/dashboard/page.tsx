@@ -26,7 +26,7 @@ interface Request {
   id: string; creatorId: string; requesterName: string; requesterContact: string;
   projectIdea: string; status: string; helpNeeded: string; vision: string;
   submissionType: string; timeSlot?: string; submittedAt: string;
-  reviewedAt?: string; adminStatus: string; notes?: string;
+  reviewedAt?: string; adminStatus: string; notes?: string; sharedNotes?: string;
 }
 
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
