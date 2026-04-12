@@ -200,7 +200,7 @@ function InboundTab({ requests, onUpdate }: { requests: Request[]; onUpdate: () 
       body: JSON.stringify(isShared ? { sharedNotes: notes } : { notes }),
     });
     setSavingNotes(null);
-    onUpdate();
+    await onUpdate();
   };
 
   if (requests.length === 0) return (
