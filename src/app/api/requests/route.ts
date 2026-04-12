@@ -36,6 +36,8 @@ export async function GET() {
       getRequestsByRequester(user.email),
     ]);
 
+    console.log('GET /api/requests — inbound:', inbound?.length, 'outbound:', outbound?.length);
+
     const map = new Map();
     [...(inbound || []), ...(outbound || [])].forEach(r => map.set(r.id, r));
     return NextResponse.json({
